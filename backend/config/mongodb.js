@@ -10,7 +10,11 @@ const connectDB = async () => {
     if (!uri) throw new Error('MONGODB_URI is not configured');
 
     // Keep the database name separate from the URI path.
-    connectionPromise = mongoose.connect(uri, { dbName: 'e-commerce' })
+    connectionPromise = mongoose.connect(uri, {
+        dbName: 'e-commerce',
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000
+    })
         .then(({ connection }) => {
             console.log('DB Connected');
             return connection;
