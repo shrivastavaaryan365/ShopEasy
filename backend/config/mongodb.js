@@ -1,15 +1,25 @@
 import mongoose from "mongoose";
 
+let connectionPromise;
+
 const connectDB = async () => {
+    if (mongoose.connection.readyState === 1) return mongoose.connection;
+    if (connectionPromise) return connectionPromise;
 
-    mongoose.connection.on('connected',() => {
-        console.log("DB Connected");
-    })
+    const uri = process.env.MONGODB_URI?.trim();
+    if (!uri) throw new Error('MONGODB_URI is not configured');
 
-    // Keep the database name separate from the URI path. Appending it to a URI
-    // that already contains a database path can create an invalid namespace.
-    await mongoose.connect(process.env.MONGODB_URI.trim(), { dbName: 'e-commerce' })
-
+    // Keep the database name separate from the URI path.
+    connectionPromise = mongoose.connect(uri, { dbName: 'e-commerce' })
+        .then(({ connection }) => {
+            console.log('DB Connected');
+            return connection;
+        })
+        .catch((error) => {
+            connectionPromise = undefined;
+            throw error;
+        });
+    return connectionPromise;
 }
 
 export default connectDB;

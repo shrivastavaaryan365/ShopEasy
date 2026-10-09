@@ -11,13 +11,22 @@ import supportRouter from './routes/supportRoute.js'
 
 // App Config
 const app = express()
-const port = process.env.PORT || 4000
-connectDB()
-connectCloudinary()
 
 // middlewares
 app.use(express.json())
 app.use(cors())
+
+// Reuse a single database connection in warm serverless instances.
+app.use(async (req, res, next) => {
+    try {
+        await connectDB()
+        next()
+    } catch (error) {
+        console.error('Database connection failed:', error.message)
+        res.status(503).json({ success: false, message: 'Database unavailable. Check the MONGODB_URI deployment setting.' })
+    }
+})
+connectCloudinary()
 
 // api endpoints
 app.use('/api/user',userRouter)
@@ -30,4 +39,9 @@ app.get('/',(req,res)=>{
     res.send("API Working")
 })
 
-app.listen(port, ()=> console.log('Server started on PORT : '+ port))
+if (!process.env.VERCEL) {
+    const port = process.env.PORT || 4000
+    app.listen(port, () => console.log('Server started on PORT : ' + port))
+}
+
+export default app
